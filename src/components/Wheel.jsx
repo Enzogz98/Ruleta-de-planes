@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import Swal from 'sweetalert2';
 import './Wheel.css'
 
@@ -10,8 +10,8 @@ const Wheel = () => {
   const [colors, setColors] = useState([]);
   const [winnerIndex, setWinnerIndex] = useState(null);
   const size = 300;
-  const centerImageRadius = 45; // Aumentamos el radio
-  const textOffset = 50; // Alejamos el texto del centro
+  const centerImageRadius = 45;
+  const textOffset = 50;
 
   const generateUniqueColors = (count) => {
     const generated = new Set();
@@ -22,7 +22,7 @@ const Wheel = () => {
     return [...generated];
   };
 
-  const fetchOptions = async () => {
+  const fetchOptions = useCallback(async () => {
     try {
       const res = await fetch('/.netlify/functions/get-opciones');
       const data = await res.json();
@@ -34,17 +34,18 @@ const Wheel = () => {
       setOptions(fallback);
       setColors(generateUniqueColors(fallback.length));
     }
-  };
-
-  useEffect(() => {
-    fetchOptions();
   }, []);
 
-  useEffect(() => {
-    if (options.length > 0) drawWheel();
-  }, [options, angle, winnerIndex]);
+  const truncateText = (ctx, text, maxWidth) => {
+    if (ctx.measureText(text).width <= maxWidth) return text;
+    let truncated = text;
+    while (ctx.measureText(truncated + '...').width > maxWidth && truncated.length > 0) {
+      truncated = truncated.slice(0, -1);
+    }
+    return truncated + '...';
+  };
 
-  const drawWheel = () => {
+  const drawWheel = useCallback(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, size, size);
@@ -73,14 +74,14 @@ const Wheel = () => {
       }
 
       ctx.save();
-ctx.translate(size / 2, size / 2);
-ctx.rotate(start + slice / 2);
-ctx.fillStyle = '#000';
-ctx.font = '14px Montserrat, sans-serif';
-const maxTextWidth = size / 3; // Ajustá según el tamaño de tu rueda
-const truncated = truncateText(ctx, options[i], maxTextWidth);
-ctx.fillText(truncated, textOffset, 0);
-ctx.restore();
+      ctx.translate(size / 2, size / 2);
+      ctx.rotate(start + slice / 2);
+      ctx.fillStyle = '#000';
+      ctx.font = '14px Montserrat, sans-serif';
+      const maxTextWidth = size / 3;
+      const truncated = truncateText(ctx, options[i], maxTextWidth);
+      ctx.fillText(truncated, textOffset, 0);
+      ctx.restore();
     }
 
     const img = new Image();
@@ -96,7 +97,15 @@ ctx.restore();
     };
 
     ctx.restore();
-  };
+  }, [angle, options, colors, winnerIndex]);
+
+  useEffect(() => {
+    fetchOptions();
+  }, [fetchOptions]);
+
+  useEffect(() => {
+    if (options.length > 0) drawWheel();
+  }, [options, angle, winnerIndex, drawWheel]);
 
   const handleCanvasClick = (e) => {
     const rect = canvasRef.current.getBoundingClientRect();
@@ -112,8 +121,8 @@ ctx.restore();
         imageWidth: 200,
         imageHeight: 200,
         imageAlt: 'Panda',
-        background: '#FFD1DC',        // fondo rosa bebé
-        color: '#000',                // color del texto
+        background: '#FFD1DC',
+        color: '#000',
         confirmButtonText: '¡Aww!',
         customClass: {
           popup: 'custom-popup',
@@ -148,7 +157,7 @@ ctx.restore();
         Swal.fire({
           title: 'Resultado',
           text: `Ganó: ${winner}`,
-          imageUrl: '/assets/gif.gif',  // Ruta relativa desde public
+          imageUrl: '/assets/gif.gif',
           imageWidth: 150,
           imageAlt: 'Celebración',
           background: '#FDE3EE',
@@ -201,14 +210,6 @@ ctx.restore();
   };
 
   const easeOutCubic = t => (--t) * t * t + 1;
-  const truncateText = (ctx, text, maxWidth) => {
-    if (ctx.measureText(text).width <= maxWidth) return text;
-    let truncated = text;
-    while (ctx.measureText(truncated + '...').width > maxWidth && truncated.length > 0) {
-      truncated = truncated.slice(0, -1);
-    }
-    return truncated + '...';
-  };
 
   return (
     <div style={{ minHeight: '100vh', background: '#121212', color: '#fff', textAlign: 'center', paddingTop: 20 }}>
