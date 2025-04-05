@@ -1,0 +1,13 @@
+.custom-popup {
+    border-radius: 1rem !important;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2) !important;
+  }
+  
+  .custom-confirm {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    border: none !important;
+    font-weight: bold !important;
+    padding: 10px 20px !important;
+    border-radius: 8px !important;
+  }
